@@ -38,13 +38,13 @@ my $np = Nagios::Plugin->new(
 
 $np->add_arg(
     spec     => 'warning|w=s',
-    help     => '-w, --warning=SECONDS, default: ',
+    help     => '-w, --warning=SECONDS, default: 1800',
     required => 0,
 );
 
 $np->add_arg(
     spec     => 'critical|c=s',
-    help     => '-c, --critical=SECONDS',
+    help     => '-c, --critical=SECONDS, default: 3600',
     required => 0,
 );
 
