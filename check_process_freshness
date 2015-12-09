@@ -1,0 +1,107 @@
+#!/usr/bin/env perl
+###################################################################
+# check_process_freshness is developed with GPL Licence 2.0
+#
+# GPL License: http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+#
+# Developed by: Cyril Feraudet
+# Contributors :
+#
+###################################################################
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+#    For information: cyril@feraudet.com
+#    https://github.com/feraudet/check_process_freshness
+####################################################################
+
+use strict;
+use warnings;
+
+use Nagios::Plugin;
+use Proc::ProcessTable; # Need libproc-processtable-perl debian packages
+
+my $np = Nagios::Plugin->new(
+  usage => "Usage: %s [ -v|--verbose ]\n"
+    . "[ -c|--critical=<threshold> ] [ -w|--warning=<threshold> ]\n"
+    . "[ -m|--message=<message> ] [ -s|--shortest] -p|--process <process_regex>\n"
+		. "\nSee https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT for thresholds",
+	version => '1.0.0'
+);
+
+$np->add_arg(
+    spec     => 'warning|w=s',
+    help     => '-w, --warning=SECONDS, default: ',
+    required => 0,
+);
+
+$np->add_arg(
+    spec     => 'critical|c=s',
+    help     => '-c, --critical=SECONDS',
+    required => 0,
+);
+
+$np->add_arg(
+    spec     => 'message|m=s',
+    help     => '-m, --message=STRING',
+    required => 0,
+);
+
+$np->add_arg(
+    spec     => 'process|p=s',
+    help     => '-p, --process=STRING',
+    required => 1,
+);
+
+$np->add_arg(
+    spec     => 'shortest|s',
+    help     => '-s, --shortest, use shortest start time',
+    required => 0,
+);
+
+$np->getopts;
+
+my $default_message = "processus matching \"{regex}\" restarted {seconds}s ago";
+my $warning = defined $np->opts->warning ? $np->opts->warning : 1800;
+my $critical = defined $np->opts->critical ? $np->opts->critical : 3600;
+my $message = defined $np->opts->message ? $np->opts->message : $default_message;
+my $shortest = defined $np->opts->shortest ? 1 : 0;
+my $process = $np->opts->process;
+
+my $regex =  eval { qr/$process/ };
+
+$np->nagios_exit(UNKNOWN, "Invalid regex: $process") if $@;
+
+my $t = new Proc::ProcessTable;
+
+my $time = 0;
+foreach my $p (@{$t->table}) {
+  if (defined $p->{'cmndline'} and $p->{'cmndline'} =~ /$process/ && $p->{'pid'} != $$) {
+		print "============================\n" if $np->opts->verbose;
+	  foreach my $f ($t->fields) {
+		 	print $f, ":  ", defined $p->{$f} ? $p->{$f} : "", "\n" if $np->opts->verbose;
+			$time = $p->{'start'} if $time == 0 or ($p->{'start'} < $time and $shortest);
+    }
+	}
+}
+
+$np->nagios_exit(UNKNOWN, "Can't match any command line with regex: $process") if $time == 0;
+
+$time = time - $time;
+
+my $code = $np->check_threshold(
+	check => $time,
+	warning => $warning,
+	critical => $critical,
+);
+
+$message=~s/{regex}/$process/g;
+$message=~s/{seconds}/$time/g;
+$np->nagios_exit($code,  $message);
