@@ -1,6 +1,7 @@
 # check_process_freshness
 Check process start time
 
+```perl
 /usr/lib/nagios/plugins/check_process_freshness -h
 check_process_freshness 1.0.0
 
@@ -27,3 +28,4 @@ See https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT for t
  -s, --shortest, use shortest start time
  -v, --verbose
    Show details for command-line debugging (can repeat up to 3 times)
+```
