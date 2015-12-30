@@ -29,3 +29,9 @@ See https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT for t
  -v, --verbose
    Show details for command-line debugging (can repeat up to 3 times)
 ```
+
+Requirement
+-----------
+```bash
+apt-get install libnagios-plugin-perl libproc-processtable-perl
+```
