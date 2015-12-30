@@ -30,6 +30,15 @@ See https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT for t
    Show details for command-line debugging (can repeat up to 3 times)
 ```
 
+Exemple
+-------
+Return critical if named restarted between now and 30m ago
+Return warging if named restarted between 30m ago and 1h ago
+```bash
+./check_process_freshness  -p named -c 1800: -w @1800:3600 -s
+```
+
+
 Requirement
 -----------
 ```bash
